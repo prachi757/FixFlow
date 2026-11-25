@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { toast } from "sonner";
+
 import {
   ArrowLeft,
   MapPin,
@@ -5,63 +9,162 @@ import {
   CalendarDays,
   CheckCircle2,
   Clock3,
-  Circle,
+  Loader2,
+  Image,
+  RotateCcw,
+  X,
+  AlertCircle,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+
+import { Link, useParams } from "react-router-dom";
 
 function ComplaintDetails() {
-  const complaint = {
-    id: "CF-1008",
-    title: "Ceiling fan not working",
-    description:
-      "The ceiling fan in my room is not working properly and stops after a few minutes.",
-    location: "Hostel Block A, Room 204",
-    category: "Electrical",
-    priority: "Medium",
-    assignedStaff: "Rahul Kumar",
-    status: "In Progress",
+  const { id } = useParams();
+
+  const [complaint, setComplaint] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedAction, setSelectedAction] = useState("");
+
+  // Format date
+  const formatDate = (date) => {
+    if (!date) return "";
+
+    return new Date(date).toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const timeline = [
-    {
-      title: "Complaint Submitted",
-      description: "Your complaint was submitted successfully.",
-      date: "18 Sep 2026, 10:30 AM",
-      completed: true,
-    },
-    {
-      title: "Complaint Assigned",
-      description: "The complaint was assigned to maintenance staff.",
-      date: "18 Sep 2026, 12:15 PM",
-      completed: true,
-    },
-    {
-      title: "Work Started",
-      description: "Maintenance staff has started working on the issue.",
-      date: "18 Sep 2026, 2:00 PM",
-      completed: true,
-    },
-    {
-      title: "Resolved",
-      description: "The maintenance work will be marked resolved after completion.",
-      date: "",
-      completed: false,
-    },
-    {
-      title: "Student Confirmation",
-      description: "You will be able to confirm the resolution or reopen the complaint.",
-      date: "",
-      completed: false,
-    },
-  ];
+  // Fetch particular complaint
+  const fetchComplaint = async () => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await axios.get(
+        `http://localhost:5000/api/student/complaints/${id}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      setComplaint(response.data);
+    } catch (error) {
+      setError(
+        error.response?.data?.message ||
+          "Failed to fetch complaint"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchComplaint();
+  }, [id]);
+
+  // Open confirmation modal
+  const openConfirmModal = (status) => {
+    setSelectedAction(status);
+    setShowConfirmModal(true);
+  };
+
+  // Close modal
+  const closeConfirmModal = () => {
+    if (actionLoading) return;
+
+    setShowConfirmModal(false);
+    setSelectedAction("");
+  };
+
+  // Student closes or reopens complaint
+  const handleComplaintAction = async () => {
+    try {
+      setActionLoading(true);
+
+      const response = await axios.patch(
+        `http://localhost:5000/api/student/complaints/${id}`,
+        { status: selectedAction },
+        {
+          withCredentials: true,
+        }
+      );
+
+      setComplaint(response.data.complaint);
+      setShowConfirmModal(false);
+      setSelectedAction("");
+
+      if (selectedAction === "Closed") {
+        toast.success("Complaint closed successfully!");
+      } else if (selectedAction === "Reopened") {
+        toast.success("Complaint reopened successfully!");
+      }
+    } catch (error) {
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to update complaint."
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Loading
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <Loader2
+          className="animate-spin text-blue-600"
+          size={32}
+        />
+      </div>
+    );
+  }
+
+  // Error
+  if (error || !complaint) {
+    return (
+      <div className="p-4 sm:p-6 min-w-0">
+        <Link
+          to="/student/my-complaints"
+          className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 mb-6"
+        >
+          <ArrowLeft size={17} />
+          Back to My Complaints
+        </Link>
+
+        <div className="bg-white border border-red-200 rounded-2xl p-4 sm:p-6 text-red-600 break-words">
+          {error || "Complaint not found"}
+        </div>
+      </div>
+    );
+  }
+
+  // Status badge colors
+  const statusColors = {
+    Pending: "bg-amber-50 text-amber-600",
+    Assigned: "bg-blue-50 text-blue-600",
+    "In Progress": "bg-indigo-50 text-indigo-600",
+    Resolved: "bg-green-50 text-green-600",
+    Reopened: "bg-orange-50 text-orange-600",
+    Closed: "bg-slate-100 text-slate-600",
+    Rejected: "bg-red-50 text-red-600",
+  };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6 min-w-0">
 
       {/* Back */}
       <Link
         to="/student/my-complaints"
-        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 mb-6"
+        className="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-blue-600 mb-5 sm:mb-6"
       >
         <ArrowLeft size={17} />
         Back to My Complaints
@@ -70,65 +173,94 @@ function ComplaintDetails() {
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
 
-        <div>
-          <p className="text-sm font-medium text-blue-600">
-            {complaint.id}
-          </p>
-
-          <h1 className="text-2xl font-bold text-slate-900 mt-1">
-            {complaint.title}
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-1 break-words">
+            {complaint.description}
           </h1>
 
-          <p className="text-slate-500 mt-1">
-            Submitted on 18 Sep 2026
+          <p className="text-slate-500 mt-2 text-xs sm:text-sm break-words">
+            Submitted on {formatDate(complaint.createdAt)}
           </p>
         </div>
 
-        <span className="w-fit flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 text-sm font-semibold">
+        <span
+          className={`w-fit shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold ${
+            statusColors[complaint.status] ||
+            "bg-slate-100 text-slate-600"
+          }`}
+        >
           <Clock3 size={16} />
           {complaint.status}
         </span>
 
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.8fr] gap-6">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.8fr] gap-4 sm:gap-6">
 
         {/* Left */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
 
-          {/* Description */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+          {/* Complaint Details */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 min-w-0">
 
             <h2 className="font-semibold text-slate-900 mb-4">
               Complaint Details
             </h2>
 
-            <p className="text-sm text-slate-600 leading-7">
+            <p className="text-sm text-slate-600 leading-7 break-words">
               {complaint.description}
             </p>
+
+            {complaint.photo && (
+              <div className="mt-5 min-w-0">
+
+                <div className="flex items-center gap-2 mb-3">
+                  <Image
+                    size={17}
+                    className="text-blue-600 shrink-0"
+                  />
+
+                  <p className="text-sm font-medium text-slate-700">
+                    Attached Photo
+                  </p>
+                </div>
+
+                <img
+                  src={complaint.photo}
+                  alt="Complaint"
+                  className="w-full max-w-md max-h-[400px] object-contain rounded-xl border border-slate-200"
+                />
+
+              </div>
+            )}
 
             <div className="mt-6 pt-5 border-t border-slate-100">
 
               <div className="flex items-start gap-3">
-                <MapPin size={18} className="text-blue-600 mt-0.5" />
 
-                <div>
+                <MapPin
+                  size={18}
+                  className="text-blue-600 mt-0.5 shrink-0"
+                />
+
+                <div className="min-w-0">
                   <p className="text-xs text-slate-400">
                     Location
                   </p>
 
-                  <p className="text-sm font-medium text-slate-700 mt-1">
+                  <p className="text-sm font-medium text-slate-700 mt-1 break-words">
                     {complaint.location}
                   </p>
                 </div>
+
               </div>
 
             </div>
-
           </div>
 
           {/* Timeline */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 min-w-0">
 
             <h2 className="font-semibold text-slate-900 mb-6">
               Complaint Timeline
@@ -136,67 +268,59 @@ function ComplaintDetails() {
 
             <div className="space-y-0">
 
-              {timeline.map((item, index) => (
+              {complaint.history?.map((item, index) => (
                 <div
-                  key={item.title}
-                  className="relative flex gap-4"
+                  key={item._id || index}
+                  className="relative flex gap-3 sm:gap-4"
                 >
 
-                  {/* Line */}
-                  {index !== timeline.length - 1 && (
+                  {/* Timeline Line */}
+                  {index !== complaint.history.length - 1 && (
                     <div className="absolute left-[9px] top-6 w-px h-full bg-slate-200" />
                   )}
 
                   {/* Circle */}
                   <div className="relative z-10 shrink-0">
-                    {item.completed ? (
-                      <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                        <CheckCircle2 size={13} />
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-slate-100 border border-slate-300 flex items-center justify-center">
-                        <Circle size={8} className="text-slate-400" />
-                      </div>
-                    )}
+                    <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                      <CheckCircle2 size={13} />
+                    </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="pb-7">
-                    <h3
-                      className={`text-sm font-semibold ${
-                        item.completed
-                          ? "text-slate-800"
-                          : "text-slate-400"
-                      }`}
-                    >
-                      {item.title}
+                  {/* Timeline Content */}
+                  <div className="pb-7 min-w-0 flex-1">
+
+                    <h3 className="text-sm font-semibold text-slate-800 break-words">
+                      {item.status}
                     </h3>
 
-                    <p className="text-xs text-slate-500 mt-1 leading-5">
-                      {item.description}
+                    <p className="text-xs text-slate-500 mt-1 leading-5 break-words">
+                      {item.message}
                     </p>
 
-                    {item.date && (
-                      <p className="text-xs text-slate-400 mt-2">
-                        {item.date}
+                    {item.updatedBy?.name && (
+                      <p className="text-xs text-slate-500 mt-1 break-words">
+                        Updated by: {item.updatedBy.name}
                       </p>
                     )}
-                  </div>
 
+                    <p className="text-xs text-slate-400 mt-2 break-words">
+                      {formatDate(item.createdAt)}
+                    </p>
+
+                  </div>
                 </div>
               ))}
 
             </div>
-
           </div>
 
         </div>
 
         {/* Right */}
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 min-w-0">
 
           {/* Complaint Information */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-6">
+          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-6 min-w-0">
 
             <h2 className="font-semibold text-slate-900 mb-5">
               Complaint Information
@@ -209,7 +333,7 @@ function ComplaintDetails() {
                   Category
                 </p>
 
-                <p className="text-sm font-medium text-slate-700 mt-1">
+                <p className="text-sm font-medium text-slate-700 mt-1 break-words">
                   {complaint.category}
                 </p>
               </div>
@@ -229,12 +353,17 @@ function ComplaintDetails() {
                   Assigned Staff
                 </p>
 
-                <div className="flex items-center gap-2 mt-1">
-                  <UserRound size={16} className="text-slate-400" />
+                <div className="flex items-center gap-2 mt-1 min-w-0">
 
-                  <p className="text-sm font-medium text-slate-700">
-                    {complaint.assignedStaff}
+                  <UserRound
+                    size={16}
+                    className="text-slate-400 shrink-0"
+                  />
+
+                  <p className="text-sm font-medium text-slate-700 break-words min-w-0">
+                    {complaint.assignedTo?.name || "Not assigned yet"}
                   </p>
+
                 </div>
               </div>
 
@@ -243,40 +372,161 @@ function ComplaintDetails() {
                   Submitted
                 </p>
 
-                <div className="flex items-center gap-2 mt-1">
-                  <CalendarDays size={16} className="text-slate-400" />
+                <div className="flex items-start gap-2 mt-1 min-w-0">
 
-                  <p className="text-sm font-medium text-slate-700">
-                    18 Sep 2026
+                  <CalendarDays
+                    size={16}
+                    className="text-slate-400 shrink-0 mt-0.5"
+                  />
+
+                  <p className="text-sm font-medium text-slate-700 break-words min-w-0">
+                    {formatDate(complaint.createdAt)}
                   </p>
+
                 </div>
               </div>
 
             </div>
-
           </div>
 
-          {/* Resolution Action */}
-          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6">
+          {/* Resolution */}
+          <div className="bg-blue-50 border border-blue-100 rounded-2xl p-4 sm:p-6 min-w-0">
 
             <h2 className="font-semibold text-slate-900">
               Resolution
             </h2>
 
-            <p className="text-sm text-slate-500 mt-2 leading-6">
-              Once the maintenance staff marks this complaint as resolved,
-              you can confirm whether the issue has actually been fixed.
-            </p>
+            {complaint.status === "Resolved" ? (
+              <>
+                <p className="text-sm text-slate-500 mt-2 leading-6">
+                  Maintenance staff has marked this complaint as resolved.
+                  Please confirm whether the issue has actually been fixed.
+                </p>
 
-            <div className="mt-4 text-xs text-blue-600 font-medium">
-              Confirmation options will appear after resolution.
-            </div>
+                <div className="flex flex-col sm:flex-row gap-3 mt-5">
+
+                  <button
+                    onClick={() => openConfirmModal("Closed")}
+                    disabled={actionLoading}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition"
+                  >
+                    <CheckCircle2 size={17} />
+                    Close Complaint
+                  </button>
+
+                  <button
+                    onClick={() => openConfirmModal("Reopened")}
+                    disabled={actionLoading}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition"
+                  >
+                    <RotateCcw size={17} />
+                    Reopen Complaint
+                  </button>
+
+                </div>
+              </>
+            ) : complaint.status === "Closed" ? (
+              <p className="text-sm text-slate-500 mt-2 leading-6">
+                You have confirmed that this complaint has been resolved.
+              </p>
+            ) : complaint.status === "Reopened" ? (
+              <p className="text-sm text-slate-500 mt-2 leading-6">
+                This complaint has been reopened because the issue needs
+                further attention. It is now waiting for admin review.
+              </p>
+            ) : (
+              <p className="text-sm text-slate-500 mt-2 leading-6">
+                Once the maintenance staff marks this complaint as
+                resolved, you can confirm whether the issue has
+                actually been fixed.
+              </p>
+            )}
 
           </div>
 
         </div>
 
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+
+          <div className="bg-white w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl p-5 sm:p-6 relative animate-in fade-in zoom-in duration-200">
+
+            {/* Close Icon */}
+            <button
+              onClick={closeConfirmModal}
+              disabled={actionLoading}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 disabled:opacity-50"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Modal Icon */}
+            <div
+              className={`w-14 h-14 rounded-full flex items-center justify-center mb-5 ${
+                selectedAction === "Closed"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-orange-50 text-orange-600"
+              }`}
+            >
+              {selectedAction === "Closed" ? (
+                <CheckCircle2 size={28} />
+              ) : (
+                <AlertCircle size={28} />
+              )}
+            </div>
+
+            {/* Modal Heading */}
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 pr-6">
+              {selectedAction === "Closed"
+                ? "Close Complaint?"
+                : "Reopen Complaint?"}
+            </h2>
+
+            {/* Modal Description */}
+            <p className="text-sm text-slate-500 mt-3 leading-6">
+              {selectedAction === "Closed"
+                ? "Are you sure the issue has been resolved? Once you confirm, this complaint will be closed."
+                : "Are you sure the issue is still not fixed? This complaint will be sent back to the admin for review."}
+            </p>
+
+            {/* Modal Buttons */}
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 mt-7">
+
+              <button
+                onClick={closeConfirmModal}
+                disabled={actionLoading}
+                className="w-full sm:w-auto px-5 py-2.5 text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={handleComplaintAction}
+                disabled={actionLoading}
+                className={`w-full sm:w-auto px-5 py-2.5 min-w-[110px] flex items-center justify-center gap-2 text-sm font-semibold text-white rounded-xl transition disabled:opacity-60 ${
+                  selectedAction === "Closed"
+                    ? "bg-green-600 hover:bg-green-700"
+                    : "bg-orange-500 hover:bg-orange-600"
+                }`}
+              >
+                {actionLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Please wait
+                  </>
+                ) : (
+                  "Confirm"
+                )}
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );

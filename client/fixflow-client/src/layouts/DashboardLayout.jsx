@@ -9,6 +9,8 @@ import AdminNavbar from "../components/AdminNavbar";
 import StaffNavbar from "../components/StaffNavbar";
 
 import Footer from "../components/Footer";
+import AdminFooter from "../components/AdminFooter";
+import StaffFooter from "../components/StaffFooter";
 
 function DashboardLayout() {
   const location = useLocation();
@@ -27,7 +29,7 @@ function DashboardLayout() {
         <Sidebar />
       )}
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
 
         {isAdmin ? (
           <AdminNavbar />
@@ -37,13 +39,19 @@ function DashboardLayout() {
           <Navbar />
         )}
 
-        {/* Page Content */}
-        <main className="flex-1">
+        <main className={`flex-1 min-w-0 ${
+          !isAdmin && !isStaff ? "pb-20 md:pb-0" : ""
+        }`}>
           <Outlet />
         </main>
 
-        {/* Footer */}
-        <Footer />
+        {isAdmin ? (
+          <AdminFooter />
+        ) : isStaff ? (
+          <StaffFooter />
+        ) : (
+          <Footer />
+        )}
 
       </div>
     </div>

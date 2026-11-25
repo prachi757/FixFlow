@@ -4,46 +4,43 @@ import {
   CheckCircle2,
   ArrowRight,
 } from "lucide-react";
+
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 function MyComplaints() {
-  const complaints = [
-    {
-      id: "CF-1008",
-      title: "Ceiling fan not working",
-      location: "Room 204",
-      date: "18 Sep 2026",
-      status: "In Progress",
-      statusType: "progress",
-    },
-    {
-      id: "CF-1007",
-      title: "Water leakage near bathroom",
-      location: "Block A",
-      date: "17 Sep 2026",
-      status: "Pending",
-      statusType: "pending",
-    },
-    {
-      id: "CF-1006",
-      title: "Light not working",
-      location: "Room 112",
-      date: "15 Sep 2026",
-      status: "Resolved",
-      statusType: "resolved",
-    },
-  ];
+  const [complaints, setComplaints] = useState([]);
+
+  useEffect(() => {
+    const fetchComplaints = async () => {
+      try {
+        const response = await axios.get(
+          "http://localhost:5000/api/student/complaints",
+          {
+            withCredentials: true,
+          }
+        );
+
+        setComplaints(response.data.recentComplaints);
+      } catch (error) {
+        console.error("Failed to fetch complaints:", error);
+      }
+    };
+
+    fetchComplaints();
+  }, []);
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
 
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
           My Complaints
         </h1>
 
-        <p className="text-slate-500 mt-1">
+        <p className="text-sm sm:text-base text-slate-500 mt-1">
           View and track all your maintenance complaints.
         </p>
       </div>
@@ -51,73 +48,100 @@ function MyComplaints() {
       {/* Complaints */}
       <div className="space-y-4">
 
-        {complaints.map((complaint) => (
-          <div
-            key={complaint.id}
-            className="bg-white border border-slate-200 rounded-2xl p-5 hover:border-blue-200 hover:shadow-sm transition-all"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {complaints.length === 0 ? (
+          <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 text-center">
 
-              {/* Complaint Information */}
-              <div className="flex items-start gap-4">
+            <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+              <ClipboardList size={26} />
+            </div>
 
-                <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                  <ClipboardList size={20} />
+            <h2 className="text-base font-semibold text-slate-800">
+              No complaints found
+            </h2>
+
+            <p className="text-sm text-slate-500 mt-2">
+              You haven't submitted any maintenance complaints yet.
+            </p>
+
+            <Link
+              to="/student/report-issue"
+              className="inline-flex items-center gap-2 mt-5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium"
+            >
+              Report an Issue
+              <ArrowRight size={16} />
+            </Link>
+
+          </div>
+        ) : (
+
+          complaints.map((complaint) => (
+            <div
+              key={complaint._id}
+              className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 hover:border-blue-200 hover:shadow-sm transition-all"
+            >
+
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+
+                {/* Complaint Information */}
+                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+
+                  <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                    <ClipboardList size={20} />
+                  </div>
+
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold text-slate-800 mt-1 break-words">
+                      {complaint.description}
+                    </h2>
+
+                    <p className="text-sm text-slate-500 mt-1 break-words">
+                      {complaint.location} •{" "}
+                      {new Date(complaint.createdAt).toLocaleDateString("en-IN")}
+                    </p>
+                  </div>
+
                 </div>
 
-                <div>
-                  <p className="text-xs font-medium text-slate-400">
-                    {complaint.id}
-                  </p>
+                {/* Status + View */}
+                <div className="flex items-center justify-between sm:justify-end gap-4">
 
-                  <h2 className="text-base font-semibold text-slate-800 mt-1">
-                    {complaint.title}
-                  </h2>
+                  {complaint.status === "Pending" && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold shrink-0">
+                      <Clock3 size={14} />
+                      {complaint.status}
+                    </span>
+                  )}
 
-                  <p className="text-sm text-slate-500 mt-1">
-                    {complaint.location} • {complaint.date}
-                  </p>
-                </div>
+                  {complaint.status === "In Progress" && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold shrink-0">
+                      <Clock3 size={14} />
+                      {complaint.status}
+                    </span>
+                  )}
 
-              </div>
+                  {complaint.status === "Resolved" && (
+                    <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold shrink-0">
+                      <CheckCircle2 size={14} />
+                      {complaint.status}
+                    </span>
+                  )}
 
-              {/* Status + View */}
-              <div className="flex items-center gap-4">
-
-                {complaint.statusType === "pending" && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 text-xs font-semibold">
-                    <Clock3 size={14} />
-                    {complaint.status}
-                  </span>
-                )}
-
-                {complaint.statusType === "progress" && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-semibold">
-                    <Clock3 size={14} />
-                    {complaint.status}
-                  </span>
-                )}
-
-                {complaint.statusType === "resolved" && (
-                  <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-xs font-semibold">
-                    <CheckCircle2 size={14} />
-                    {complaint.status}
-                  </span>
-                )}
-
-                <Link
-                to={`/student/my-complaints/${complaint.id}`}
-                className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
+                  <Link
+                    to={`/student/my-complaints/${complaint._id}`}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-blue-600 hover:text-blue-700 shrink-0"
+                  >
                     View
                     <ArrowRight size={16} />
-                </Link>
+                  </Link>
+
+                </div>
 
               </div>
 
             </div>
-          </div>
-        ))}
+          ))
+
+        )}
 
       </div>
 

@@ -1,57 +1,108 @@
-import { Bell, Search } from "lucide-react";
+import {
+  Bell,
+  GraduationCap,
+  ChevronRight,
+} from "lucide-react";
+
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 function Navbar() {
+  const { user } = useAuth();
+  const location = useLocation();
+
+  const name = user?.name || "Student";
+  const email = user?.collegeEmail || "";
+
+  const initials = name
+    .trim()
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const isNotificationsPage =
+    location.pathname === "/student/notifications";
+
+  const isProfilePage =
+    location.pathname === "/student/profile";
+
   return (
-    <header className="h-20 bg-white border-b border-slate-200 px-6 flex items-center justify-between">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 sm:px-6 lg:px-8">
 
-      {/* Left */}
-      <div>
-        <h2 className="text-xl font-semibold text-slate-900">
-          Dashboard
-        </h2>
-        <p className="text-sm text-slate-400 mt-1">
-          Welcome back to FixFlow
-        </p>
-      </div>
+      <div className="h-16 sm:h-[76px] flex items-center justify-between gap-2 sm:gap-4">
 
-      {/* Right */}
-      <div className="flex items-center gap-4">
-
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 w-64 h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl">
-          <Search size={17} className="text-slate-400" />
-
-          <input
-            type="text"
-            placeholder="Search..."
-            className="w-full bg-transparent outline-none text-sm text-slate-700 placeholder:text-slate-400"
-          />
-        </div>
-
-        {/* Notification */}
-        <button className="relative w-10 h-10 rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-50">
-          <Bell size={20} />
-
-          <span className="absolute top-2 right-2 w-2 h-2 bg-blue-600 rounded-full" />
-        </button>
-
-        {/* User */}
-        <div className="flex items-center gap-3 pl-2">
-          <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold">
-            P
+        {/* Left Section */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-blue-600 flex items-center justify-center border border-blue-100 shrink-0">
+            <GraduationCap size={23} strokeWidth={2} />
           </div>
 
-          <div className="hidden sm:block">
-            <p className="text-sm font-semibold text-slate-800">
-              Prachi Garg
-            </p>
+          <div className="min-w-0">
+            <h2 className="text-sm sm:text-[15px] font-bold text-slate-800 tracking-tight truncate">
+              Student Workspace
+            </h2>
 
-            <p className="text-xs text-slate-400">
-              Student
+            <p className="hidden sm:block text-xs text-slate-400 mt-0.5">
+              Campus services & support
             </p>
           </div>
         </div>
 
+        {/* Right Section */}
+        <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+
+          {/* Notifications */}
+          <Link
+            to="/student/notifications"
+            aria-label="Notifications"
+            className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-all duration-200 ${
+              isNotificationsPage
+                ? "bg-blue-50 text-blue-600"
+                : "text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+            }`}
+          >
+            <Bell size={21} strokeWidth={2} />
+
+            <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white" />
+          </Link>
+
+          {/* Divider */}
+          <div className="hidden sm:block h-9 w-px bg-slate-200" />
+
+          {/* Student Profile */}
+          <Link
+            to="/student/profile"
+            className={`flex items-center gap-2 sm:gap-3 p-1.5 sm:pr-3 rounded-xl transition-all duration-200 group ${
+              isProfilePage
+                ? "bg-blue-50"
+                : "hover:bg-slate-50"
+            }`}
+          >
+            {/* Initials */}
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 flex items-center justify-center font-bold text-sm border border-blue-100 shrink-0">
+              {initials || "S"}
+            </div>
+
+            {/* Name and Email */}
+            <div className="hidden sm:block text-left max-w-44">
+              <p className="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-600 transition-colors">
+                {name}
+              </p>
+
+              <p className="text-xs text-slate-400 truncate mt-0.5">
+                {email || "Student Account"}
+              </p>
+            </div>
+
+            <ChevronRight
+              size={17}
+              className="hidden sm:block text-slate-400 group-hover:text-blue-600 transition-colors"
+            />
+          </Link>
+
+        </div>
       </div>
     </header>
   );
